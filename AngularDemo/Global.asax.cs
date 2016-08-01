@@ -9,6 +9,7 @@ using System.Web.SessionState;
 using System.Web.Http;
 using AngularDemo.App_Start;
 using System.Web.Optimization;
+using Newtonsoft.Json.Serialization;
 
 namespace AngularDemo
 {
@@ -20,7 +21,9 @@ namespace AngularDemo
             AreaRegistration.RegisterAllAreas();
             BundleConfig.RegisterBundles(BundleTable.Bundles);
             GlobalConfiguration.Configure(WebApiConfig.Register);
-            RouteConfig.RegisterRoutes(RouteTable.Routes);            
+            RouteConfig.RegisterRoutes(RouteTable.Routes);
+
+            GlobalConfiguration.Configuration.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
         }
     }
 }
