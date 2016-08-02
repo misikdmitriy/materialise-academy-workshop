@@ -48,6 +48,16 @@ namespace AngularDemo.Controllers
             };
         }
 
+        public CriminalApiController()
+        {
+
+        }
+
+        public CriminalApiController(IList<Criminal> criminalRepo)
+        {
+            _criminalRepo = criminalRepo;
+        }
+
         [Route("")]
         [HttpGet]
         public IHttpActionResult GetAll()

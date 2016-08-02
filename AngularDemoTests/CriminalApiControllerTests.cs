@@ -1,215 +1,160 @@
-﻿using AngularDemo.Models;
+﻿using AngularDemo.Controllers;
+using AngularDemo.Models;
+using Moq;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using System.Web.Http;
+using System.Web.Http.Results;
 
 namespace AngularDemoTests
 {
     [TestFixture]
     public class CriminalApiControllerTests
     {
-        private const string _projectURL = "http://localhost:49457/";
-        private const string _apiPath = "api/criminal/";
-        private HttpResponseMessage _resultResponse;
+        private CriminalApiController _criminalApiController;
+        private Mock<IList<Criminal>> _mockCriminals;
+        private Mock<Criminal> _mockCriminal;
+        private Criminal _criminal { get { return _mockCriminal.Object; } }
 
-        [OneTimeSetUp]
+        [SetUp]
         public void Setup()
         {
-            _resultResponse = null;
-        }
+            _mockCriminal = new Mock<Criminal>();
 
-        [Test, Order(1)]
-        public async Task GetAllShouldReturnArrayOfAllElements()
-        {
-            using (var httpClient = new HttpClient())
+            _mockCriminal.Object.ID = Guid.NewGuid();
+            _mockCriminal.Object.Name = "Al Capone";
+            _mockCriminal.Object.Description = "Gangster";
+            _mockCriminal.Object.Reward = 1000000.00M;
+
+            var arrayCriminals = new []
             {
-                _resultResponse = await httpClient.GetAsync(_projectURL + _apiPath);
-            }
-
-            var result = await _resultResponse.Content.ReadAsAsync<Criminal[]>();
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-            Assert.IsNotNull(result);
-            Assert.That(result.Length, Is.EqualTo(4));
-        }
-
-        [Test, Order(2)]
-        public async Task GetShouldReturnCriminalByItsGuid()
-        {
-            Criminal[] array = null;
-
-            using (var httpClient = new HttpClient())
-            {
-                var getAllResponse = await httpClient.GetAsync(_projectURL + _apiPath);
-                array = await getAllResponse.Content.ReadAsAsync<Criminal[]>();
-                _resultResponse = await httpClient.GetAsync(_projectURL + _apiPath + array[0].ID);
-            }
-
-            var result = await _resultResponse.Content.ReadAsAsync<Criminal>();
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-            Assert.IsNotNull(result);
-            Assert.That(result.ID, Is.EqualTo(array[0].ID));
-            Assert.That(result.Name, Is.EqualTo(array[0].Name));
-            Assert.That(result.Reward, Is.EqualTo(array[0].Reward));
-            Assert.That(result.Description, Is.EqualTo(array[0].Description));
-        }
-
-        [Test]
-        public async Task GetShouldReturnNotFoundIfElementDoesNotExist()
-        {
-            using (var httpClient = new HttpClient())
-            {
-                _resultResponse = await httpClient.GetAsync(_projectURL + _apiPath + Guid.NewGuid());
-            }
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
-        }
-
-        [Test]
-        public async Task CreateShouldCreateNewElement()
-        {
-            var criminal = new Criminal
-            {
-                Name = "Dimasik",
-                Reward = 1,
-                Description = "Idiot"
+                _criminal,
+                new Criminal
+                {
+                    ID = Guid.NewGuid(),
+                    Name = "Charles Manson",
+                    Description = "Leader of the Manson Family",
+                    Reward = 3000000.00M
+                }
             };
 
-            HttpResponseMessage getResponse = null;
+            _mockCriminals = new Mock<IList<Criminal>>();
 
-            using (var httpClient = new HttpClient())
-            {
-                var json = new JavaScriptSerializer().Serialize(criminal);
-                var stringContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
-                _resultResponse = await httpClient.PostAsync(_projectURL + _apiPath, stringContent);
+            _mockCriminals
+                .Setup(l => l.GetEnumerator())
+                .Returns(((IEnumerable<Criminal>)arrayCriminals).GetEnumerator());
 
-                getResponse = await httpClient.GetAsync(_resultResponse.Headers.Location);
-            }
+            _mockCriminals
+                .Setup(l => l.Count)
+                .Returns(arrayCriminals.Length);
 
-            var result = await getResponse.Content.ReadAsAsync<Criminal>();
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.Created));
-            Assert.That(getResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-            Assert.That(result.Name, Is.EqualTo(criminal.Name));
-            Assert.That(result.Reward, Is.EqualTo(criminal.Reward));
-            Assert.That(result.Description, Is.EqualTo(criminal.Description));
+            _criminalApiController = new CriminalApiController(_mockCriminals.Object);
         }
 
         [Test]
-        public async Task ReplaceShouldReplaceElementWithSameId()
+        public void GetAllShouldReturnAllElements()
         {
-            HttpResponseMessage getResponse = null;
+            var result = _criminalApiController.GetAll() as OkNegotiatedContentResult<Criminal[]>;
 
-            using (var httpClient = new HttpClient())
-            {
-                var criminal = new Criminal
-                {
-                    Name = "Dimasik",
-                    Reward = 1,
-                    Description = "Idiot"
-                };
-
-                var json = new JavaScriptSerializer().Serialize(criminal);
-                var stringContent1 = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
-                var postResponse = await httpClient.PostAsync(_projectURL + _apiPath, stringContent1);
-
-                var locationString = postResponse.Headers.Location.ToString();
-                criminal.ID = Guid.Parse(locationString.Substring(locationString.LastIndexOf('/') + 1));
-                criminal.Name = "Petr";
-                criminal.Reward = 2;
-                criminal.Description = "Something";
-
-                json = new JavaScriptSerializer().Serialize(criminal);
-                var stringContent2 = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
-
-                _resultResponse = await httpClient.PutAsync(_projectURL + _apiPath, stringContent2);
-
-                getResponse = await httpClient.GetAsync(_resultResponse.Headers.Location);
-            }
-
-            var result = await getResponse.Content.ReadAsAsync<Criminal>();
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(getResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-
-            Assert.That(result.Name, Is.EqualTo("Petr"));
-            Assert.That(result.Reward, Is.EqualTo(2));
-            Assert.That(result.Description, Is.EqualTo("Something"));
+            Assert.That(result.Content.Length, Is.EqualTo(_mockCriminals.Object.Count));
         }
 
         [Test]
-        public async Task ReplaceShouldReturnNotFound()
+        public void GetByIdShouldReturnCorrectItem()
         {
-            using (var httpClient = new HttpClient())
-            {
-                var criminal = new Criminal
-                {
-                    ID = Guid.NewGuid()
-                };
+            var result = _criminalApiController.Get(_mockCriminal.Object.ID) as OkNegotiatedContentResult<Criminal>;
 
-                var json = new JavaScriptSerializer().Serialize(criminal);
-                var stringContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+            Assert.That(result.Content, Is.Not.Null);
 
-                _resultResponse = await httpClient.PutAsync(_projectURL + _apiPath, stringContent);
-            }
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+            Assert.That(result.Content.ID, Is.EqualTo(_criminal.ID));
+            Assert.That(result.Content.Name, Is.EqualTo(_criminal.Name));
+            Assert.That(result.Content.Reward, Is.EqualTo(_criminal.Reward));
+            Assert.That(result.Content.Description, Is.EqualTo(_criminal.Description));
         }
 
         [Test]
-        public async Task DeleteAllShouldClearData()
+        public void GetByIdShouldReturnNotFoundResult()
         {
-            HttpResponseMessage getAllResponse = null;
+            var result = _criminalApiController.Get(Guid.NewGuid());
 
-            using (var httpClient = new HttpClient())
-            {
-                _resultResponse = await httpClient.DeleteAsync(_projectURL + _apiPath);
-
-                getAllResponse = await httpClient.GetAsync(_projectURL + _apiPath);
-            }
-
-            var result = await getAllResponse.Content.ReadAsAsync<Criminal[]>();
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(result.Length, Is.Zero);
-        }
-
-        [Test, Order(3)]
-        public async Task DeleteShouldDeleteElementByGuid()
-        {
-            Criminal[] array = null;
-            HttpResponseMessage getResponse = null;
-
-            using (var httpClient = new HttpClient())
-            {
-                var getAllResponse = await httpClient.GetAsync(_projectURL + _apiPath);
-                array = await getAllResponse.Content.ReadAsAsync<Criminal[]>();
-
-                _resultResponse = await httpClient.DeleteAsync(_projectURL + _apiPath + array[0].ID);
-
-                getResponse = await httpClient.GetAsync(_projectURL + _apiPath + array[0].ID);
-            }
-
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            Assert.That(getResponse.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+            Assert.That(result, Is.InstanceOf(typeof(NotFoundResult)));
         }
 
         [Test]
-        public async Task DeleteShouldDoNothing()
+        public void DeleteByIdShouldCallDeleteOfCollectionOnce()
         {
-            using (var httpClient = new HttpClient())
-            {
-                _resultResponse = await httpClient.DeleteAsync(_projectURL + _apiPath + Guid.NewGuid().ToString());
-            }
+            _criminalApiController.Delete(_criminal.ID);
 
-            Assert.That(_resultResponse.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+            _mockCriminals.Verify(l => l.Remove(It.Is<Criminal>(c => c.ID == _criminal.ID)), Times.Once());
+        }
+
+        [Test]
+        public void DeleteByIdShouldNotCallDeleteOfCollection()
+        {
+            _criminalApiController.Delete(Guid.NewGuid());
+
+            _mockCriminals.Verify(l => l.Remove(It.IsAny<Criminal>()), Times.Never());
+        }
+
+        [Test]
+        public void PostShouldCallAddInCollectionOnce()
+        {
+            var postCriminal = new Criminal
+            {
+                ID = Guid.NewGuid(),
+                Name = "Ted Kaczynski",
+                Description = "Terrorist",
+                Reward = 2500000.00M
+            };
+
+            _criminalApiController.Request = new HttpRequestMessage();
+            _criminalApiController.Request.RequestUri = new Uri("http://localhost:49457/api/criminal");
+            _criminalApiController.Configuration = new HttpConfiguration();
+
+            _criminalApiController.Create(postCriminal);
+
+            _mockCriminals.Verify(l => l.Add(It.IsAny<Criminal>()), Times.Once());
+        }
+
+        [Test]
+        public void UpdateShouldUpdateEntity()
+        {
+            _mockCriminal.Object.Name = "Another Name";
+
+            _criminalApiController.Request = new HttpRequestMessage();
+            _criminalApiController.Request.RequestUri = new Uri("http://localhost:49457/api/criminal");
+            _criminalApiController.Configuration = new HttpConfiguration();
+
+            var response = _criminalApiController.Replace(_mockCriminal.Object);
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            _mockCriminal.VerifySet(c => c.ID, Times.Once());
+            _mockCriminal.VerifySet(c => c.Name, Times.Exactly(3));
+            _mockCriminal.VerifySet(c => c.Description, Times.Exactly(2));
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+
+        [Test]
+        public void UpdateShouldReturnNotFoundStatusCode()
+        {
+            _criminalApiController.Request = new HttpRequestMessage();
+            _criminalApiController.Request.RequestUri = new Uri("http://localhost:49457/api/criminal");
+            _criminalApiController.Configuration = new HttpConfiguration();
+
+            var response = _criminalApiController.Replace(new Criminal { ID = Guid.NewGuid() });
+
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        }
+
+        [Test]
+        public void DeleteAllShouldCallClearOfCollection()
+        {
+            _criminalApiController.DeleteAll();
+
+            _mockCriminals.Verify(l => l.Clear(), Times.AtLeastOnce());
         }
     }
 }

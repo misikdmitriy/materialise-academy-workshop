@@ -7,9 +7,9 @@ namespace AngularDemo.Models
 {
     public class Criminal
     {
-        public Guid ID { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public decimal Reward { get; set; }
+        public virtual Guid ID { get; set; }
+        public virtual string Name { get; set; }
+        public virtual string Description { get; set; }
+        public virtual decimal Reward { get; set; }
     }
 }
