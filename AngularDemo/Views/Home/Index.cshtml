@@ -5,13 +5,33 @@
 
 <h2>Index</h2>
 
-<div ng-controller="homeController as vm">
-
-    2+2 = {{2+2}} <br />
-
-    <div ng-cloak>page title: {{vm.title}}</div>
-    <button ng-click="vm.getPokemon()">Get pokemon</button>
-    <div ng-show="vm.pokemon">
-        Pokemon name: {{vm.pokemon.name}}
+<div ng-controller="criminalApiController as vm">
+    <div class="form-group">
+        <input class="form-control" type="text" ng-model="vm.filter.Name" />
     </div>
+
+    <div class="container-fluid">
+        <div style="border-bottom: 3px solid black; padding: 15px" ng-repeat="criminal in vm.criminals | filter: vm.filter.Name">
+            <h1 style="display: inline">{{criminal.name}}</h1>
+            <button class="btn btn-danger" ng-click="vm.delete(criminal.id)">Delete</button>
+            <h2>{{criminal.description}}</h2>
+            <p>Reward: {{criminal.reward}}</p>
+            <br />
+        </div>
+
+
+        <form name="newCriminalForm">
+            <label>Id:</label> <input name="name" class="form-control" ng-minlength="5" ng-model="vm.newCriminal.Name" type="text" />
+            <div class="text-danger" ng-show="newCriminalForm.name.$error.minlength">Nothing</div>
+            <label>Description:</label> <input class="form-control" ng-model="vm.newCriminal.Description" type="text" />
+            <label>Reward:</label> <input valid-number name="reward" class="form-control"
+                                          ng-model="vm.newCriminal.Reward" type="text"
+                                          ng-required="" />
+
+            <label class="text-danger" ng-show="newCriminalForm.reward.$error.required">Reward is required.</label>
+            <button style="margin: 20px" class="btn btn-info" type="submit" ng-click="vm.addNewCriminal()">Add new</button>
+        </form>
+
+    </div>
+
 </div>

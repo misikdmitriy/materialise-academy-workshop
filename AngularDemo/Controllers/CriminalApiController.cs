@@ -69,16 +69,16 @@ namespace AngularDemo.Controllers
         [HttpPut]
         public HttpResponseMessage Replace(Criminal criminal)
         {
-            var dbCriminal = _criminalRepo.FirstOrDefault(c => c.ID == criminal.ID);
+            var entity = _criminalRepo.FirstOrDefault(c => c.ID == criminal.ID);
 
-            if (dbCriminal == null)
+            if (entity == null)
             {
                 return Request.CreateResponse(HttpStatusCode.NotFound);
             }
 
-            dbCriminal.Name = criminal.Name;
-            dbCriminal.Description = criminal.Description;
-            dbCriminal.Reward = criminal.Reward;
+            entity.Name = criminal.Name;
+            entity.Description = criminal.Description;
+            entity.Reward = criminal.Reward;
             
             return CreateResponseWithGetLocationUri(HttpStatusCode.OK, criminal.ID);
         }
@@ -124,7 +124,7 @@ namespace AngularDemo.Controllers
 
         private HttpResponseMessage CreateResponseWithGetLocationUri(HttpStatusCode httpStatusCode, Guid id)
         {
-            var response = Request.CreateResponse(httpStatusCode);
+            var response = Request.CreateResponse(httpStatusCode, id.ToString());
             response.Headers.Location = CreateAbsoluteGetUri(id);
 
             return response;

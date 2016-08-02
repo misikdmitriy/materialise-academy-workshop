@@ -22,7 +22,7 @@ namespace AngularDemoTests
             _resultResponse = null;
         }
 
-        [Test, Order(0)]
+        [Test, Order(1)]
         public async Task GetAllShouldReturnArrayOfAllElements()
         {
             using (var httpClient = new HttpClient())
@@ -38,7 +38,7 @@ namespace AngularDemoTests
             Assert.That(result.Length, Is.EqualTo(4));
         }
 
-        [Test, Order(1)]
+        [Test, Order(2)]
         public async Task GetShouldReturnCriminalByItsGuid()
         {
             Criminal[] array = null;
@@ -181,7 +181,7 @@ namespace AngularDemoTests
             Assert.That(result.Length, Is.Zero);
         }
 
-        [Test, Order(2)]
+        [Test, Order(3)]
         public async Task DeleteShouldDeleteElementByGuid()
         {
             Criminal[] array = null;
