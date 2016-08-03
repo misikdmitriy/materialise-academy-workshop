@@ -33,24 +33,27 @@
         }
 
         function deleteById(id) {
-            var index;
-
-            for (index = 0; index < vm.criminals.length; index++) {
-                if (vm.criminals[index].id == id) {
-                    break;
+            for (var i = 0; i < vm.criminals.length; i++) {
+                if (vm.criminals[i].id == id) {
+                    vm.criminals.splice(i, 1);
+                    return;
                 }
             }
-
-            vm.criminals.splice(index, 1);
         }
 
-        function replace(criminal) {
+        function replaceById(criminal) {
             for (var i = 0; i < vm.criminals.length; i++) {
                 if (vm.criminals[i].id == criminal.id) {
                     vm.criminals[i] = criminal;
-                    break;
+                    return;
                 }
             }
+        }
+
+        function addByUrl(location) {
+            criminalApiFactory.getByLocation(location).success(function (data) {
+                vm.criminals.push(data);
+            })
         }
 
         function addNewCriminal() {
@@ -59,38 +62,29 @@
             } else {
                 putAnother();
             }
-            
         }
 
         function putAnother() {
-            var model = {
-                id: vm.newCriminal.id,
-                name: vm.newCriminal.name,
-                description: vm.newCriminal.description,
-                reward: vm.newCriminal.reward,
-            }
+            var model = getNewCriminal();
 
             criminalApiFactory.putAnother(model).success(function () {
-                console.log('Put');
-                replace(model);
+                replaceById(model);
                 vm.newCriminal = initNewCriminal();
                 vm.buttonName = 'Add New';
             })
         }
 
         function postNew() {
-            var model = vm.newCriminal;
+            var model = getNewCriminal();
 
-            criminalApiFactory.postNew(model).success(function () {
-                console.log('Added');
+            criminalApiFactory.postNew(model).success(function (data, status, headers, config) {
+                addByUrl(headers().location);
                 vm.newCriminal = initNewCriminal();
-                vm.criminals.push(model);
+                
             })
         }
 
         function setForm(criminal) {
-            console.log(vm.newCriminalForm);
-            console.log(vm.newCriminal);
             vm.newCriminal.id = criminal.id;
             vm.newCriminal.name = criminal.name;
             vm.newCriminal.reward = criminal.reward;
@@ -104,6 +98,15 @@
                 name: "",
                 description: "",
                 reward: 0
+            }
+        }
+
+        function getNewCriminal() {
+            return {
+                id: vm.newCriminal.id,
+                name: vm.newCriminal.name,
+                description: vm.newCriminal.description,
+                reward: vm.newCriminal.reward,
             }
         }
     }
