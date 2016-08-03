@@ -17,17 +17,17 @@ namespace AngularDemoTests
         private CriminalApiController _criminalApiController;
         private Mock<IList<Criminal>> _mockCriminals;
         private Mock<Criminal> _mockCriminal;
-        private Criminal _criminal { get { return _mockCriminal.Object; } }
+        private Criminal _criminal { get { return _mockCriminal.Ob; } }
 
         [SetUp]
         public void Setup()
         {
             _mockCriminal = new Mock<Criminal>();
 
-            _mockCriminal.Object.ID = Guid.NewGuid();
-            _mockCriminal.Object.Name = "Al Capone";
-            _mockCriminal.Object.Description = "Gangster";
-            _mockCriminal.Object.Reward = 1000000.00M;
+            _criminal.ID = Guid.NewGuid();
+            _criminal.Name = "Al Capone";
+            _criminal.Description = "Gangster";
+            _criminal.Reward = 1000000.00M;
 
             var arrayCriminals = new []
             {
@@ -57,16 +57,22 @@ namespace AngularDemoTests
         [Test]
         public void GetAllShouldReturnAllElements()
         {
+            // Arrange
+            // Act
             var result = _criminalApiController.GetAll() as OkNegotiatedContentResult<Criminal[]>;
 
+            // Assert
             Assert.That(result.Content.Length, Is.EqualTo(_mockCriminals.Object.Count));
         }
 
         [Test]
         public void GetByIdShouldReturnCorrectItem()
         {
-            var result = _criminalApiController.Get(_mockCriminal.Object.ID) as OkNegotiatedContentResult<Criminal>;
+            // Arrange
+            // Act
+            var result = _criminalApiController.Get(_criminal.ID) as OkNegotiatedContentResult<Criminal>;
 
+            //Assert
             Assert.That(result.Content, Is.Not.Null);
 
             Assert.That(result.Content.ID, Is.EqualTo(_criminal.ID));
@@ -78,30 +84,40 @@ namespace AngularDemoTests
         [Test]
         public void GetByIdShouldReturnNotFoundResult()
         {
+            // Arrange
+            // Act
             var result = _criminalApiController.Get(Guid.NewGuid());
 
+            // Assert
             Assert.That(result, Is.InstanceOf(typeof(NotFoundResult)));
         }
 
         [Test]
         public void DeleteByIdShouldCallDeleteOfCollectionOnce()
         {
+            // Arrange
+            // Act
             _criminalApiController.Delete(_criminal.ID);
 
+            // Assert
             _mockCriminals.Verify(l => l.Remove(It.Is<Criminal>(c => c.ID == _criminal.ID)), Times.Once());
         }
 
         [Test]
         public void DeleteByIdShouldNotCallDeleteOfCollection()
         {
+            // Arrange
+            // Act
             _criminalApiController.Delete(Guid.NewGuid());
 
+            // Assert
             _mockCriminals.Verify(l => l.Remove(It.IsAny<Criminal>()), Times.Never());
         }
 
         [Test]
         public void PostShouldCallAddInCollectionOnce()
         {
+            // Arrange
             var postCriminal = new Criminal
             {
                 ID = Guid.NewGuid(),
@@ -114,22 +130,27 @@ namespace AngularDemoTests
             _criminalApiController.Request.RequestUri = new Uri("http://localhost:49457/api/criminal");
             _criminalApiController.Configuration = new HttpConfiguration();
 
+            // Act
             _criminalApiController.Create(postCriminal);
 
+            // Assert
             _mockCriminals.Verify(l => l.Add(It.IsAny<Criminal>()), Times.Once());
         }
 
         [Test]
         public void UpdateShouldUpdateEntity()
         {
-            _mockCriminal.Object.Name = "Another Name";
+            // Arrange
+            _criminal.Name = "Another Name";
 
             _criminalApiController.Request = new HttpRequestMessage();
             _criminalApiController.Request.RequestUri = new Uri("http://localhost:49457/api/criminal");
             _criminalApiController.Configuration = new HttpConfiguration();
 
-            var response = _criminalApiController.Replace(_mockCriminal.Object);
+            // Act
+            var response = _criminalApiController.Replace(_criminal);
 
+            // Assert
 #pragma warning disable CS0618 // Type or member is obsolete
             _mockCriminal.VerifySet(c => c.ID, Times.Once());
             _mockCriminal.VerifySet(c => c.Name, Times.Exactly(3));
@@ -140,20 +161,26 @@ namespace AngularDemoTests
         [Test]
         public void UpdateShouldReturnNotFoundStatusCode()
         {
+            // Arrange
             _criminalApiController.Request = new HttpRequestMessage();
             _criminalApiController.Request.RequestUri = new Uri("http://localhost:49457/api/criminal");
             _criminalApiController.Configuration = new HttpConfiguration();
 
+            // Act
             var response = _criminalApiController.Replace(new Criminal { ID = Guid.NewGuid() });
 
+            // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         }
 
         [Test]
         public void DeleteAllShouldCallClearOfCollection()
         {
+            // Arrange
+            // Act
             _criminalApiController.DeleteAll();
 
+            // Assert
             _mockCriminals.Verify(l => l.Clear(), Times.AtLeastOnce());
         }
     }
